@@ -1,0 +1,22 @@
+{
+  "name": "ningbo-airport-noise-gis",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/prepare-cesium.mjs",
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "prebuild": "node scripts/prepare-cesium.mjs",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@mapbox/vector-tile": "2.0.4",
+    "cesium": "1.139.0",
+    "pbf": "4.0.1"
+  },
+  "devDependencies": {
+    "vite": "7.3.8"
+  }
+}

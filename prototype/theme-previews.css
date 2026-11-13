@@ -1,0 +1,90 @@
+/* Palette previews are opt-in through the theme query parameter. */
+:root[data-theme="civic"] {
+  --blue:#165bb8; --ink:#172c47; --muted:#546981; --line:#d8e3ef;
+  --top:#142d4f; --top-ink:#fff; --top-muted:#b6cbe3; --logo:#265e99;
+  --panel:#f7fbff; --card:#fff; --control:#fff; --active:#e3efff;
+  --badge:#f1e8d6; --badge-ink:#765322; --track:#e2ebf6;
+  --land:#dce7ea; --field1:#d3e0e4; --field2:#d9e5e7; --field-edge:#c6d9de;
+  --town:#dce4eb; --building:#afc0ce; --water:#93bacf; --road:#f3f7fa; --road-edge:#b9cbd7;
+  --airport:#bfced7; --runway:#557389; --map-ink:#32566b; --map-label:#4c647b;
+}
+:root[data-theme="night"] {
+  color-scheme:dark;
+  --blue:#7bddd6; --ink:#e3eff6; --muted:#a2bacb; --line:#345266;
+  --top:#101f31; --top-ink:#eaf4fa; --top-muted:#a5bccb; --logo:#146668;
+  --panel:#172b3a; --card:#1e3546; --control:#1c3141; --active:#214952;
+  --badge:#4d3e29; --badge-ink:#f8d49a; --track:#2d4658;
+  --land:#1a303b; --field1:#203a45; --field2:#243e4a; --field-edge:#294654;
+  --town:#233947; --building:#3b5465; --water:#225969; --road:#42586a; --road-edge:#2e495a;
+  --airport:#344c5a; --runway:#142a38; --map-ink:#e3eff6; --map-label:#b4d0db;
+}
+:root[data-theme="sand"] {
+  --blue:#954529; --ink:#3d3028; --muted:#6e5a4f; --line:#e4d6c9;
+  --top:#fdf6ea; --top-ink:#432d24; --top-muted:#765d4e; --logo:#9a4b32;
+  --panel:#fffaf0; --card:#fffdf8; --control:#fff9f0; --active:#f4e3d6;
+  --badge:#f3e5cb; --badge-ink:#775024; --track:#efe4d6;
+  --land:#ebe1cc; --field1:#dfd8bf; --field2:#e7dfc8; --field-edge:#d5c8ae;
+  --town:#e4d7c6; --building:#c1af9b; --water:#91b7b3; --road:#fff6e8; --road-edge:#cdbda9;
+  --airport:#d6c6b3; --runway:#716457; --map-ink:#584139; --map-label:#735f51;
+}
+
+[data-theme] body { background:var(--land); }
+[data-theme] header { background:var(--top); color:var(--top-ink); }
+[data-theme] .brand .sub { color:var(--top-muted); }
+[data-theme] .logo { background:var(--logo); }
+[data-theme] .controlbar,
+[data-theme] .workspace aside,
+[data-theme] .tablepanel,
+[data-theme] .region-panel,
+[data-theme] .maptop,
+[data-theme] .maplegend,
+[data-theme] .maphint,
+[data-theme] .layers,
+[data-theme] .inspector,
+[data-theme] dialog,
+[data-theme] footer { background:var(--panel); border-color:var(--line); }
+[data-theme] .object-card { background:var(--card); border-color:var(--line); }
+[data-theme] .object-region,
+[data-theme] .object-foot,
+[data-theme] .maptop,
+[data-theme] .maphint,
+[data-theme] .legendtitle,
+[data-theme] .note,
+[data-theme] dialog p { color:var(--muted); }
+[data-theme] .object-foot, [data-theme] .detailrow { border-color:var(--line); }
+[data-theme] .object-foot b { color:var(--ink); }
+[data-theme] button, [data-theme] select, [data-theme] input { background:var(--control); border-color:var(--line); color:var(--ink); }
+[data-theme] select:disabled { background:var(--panel); }
+[data-theme] nav button { color:var(--muted); }
+[data-theme] nav button.active { background:var(--active)!important; color:var(--blue); }
+[data-theme] button:hover,
+[data-theme] .metric.active,
+[data-theme] .object-card.selected,
+[data-theme] .tag,
+[data-theme] .notice { background:var(--active); }
+[data-theme] .notice { color:var(--ink); }
+[data-theme] .object-card.selected, [data-theme] .object-card:hover { border-color:var(--blue); }
+[data-theme] .noise-badge, [data-theme] .demo { background:var(--badge); color:var(--badge-ink); }
+[data-theme] .bar { background:var(--track); }
+[data-theme] a, [data-theme] .filters .reset, [data-theme] .object-heading button { color:var(--blue); }
+[data-theme] .north { color:var(--map-ink); }
+[data-theme] .map { background:var(--land); }
+[data-theme] #fields [fill="#e3e9df"] { fill:var(--land); }
+[data-theme] #fields [fill="#d3dfcf"] { fill:var(--field1); }
+[data-theme] #fields [fill="#dbe5d4"] { fill:var(--field2); }
+[data-theme] #fields path { stroke:var(--field-edge); }
+[data-theme] #built [fill="#e6e7df"] { fill:var(--town); }
+[data-theme] #built rect:not([fill="#e6e7df"]) { fill:var(--building); stroke:var(--building); }
+[data-theme] #city [stroke="#a4c9d0"] { stroke:var(--water); }
+[data-theme] #city [stroke="#faf8ed"], [data-theme] #city [stroke="#f8f6e9"] { stroke:var(--road); }
+[data-theme] #city [stroke="#c4cabc"], [data-theme] #city [stroke="#c9bda3"] { stroke:var(--road-edge); }
+[data-theme] #city .areaLabel { fill:var(--map-label); }
+[data-theme] #scene [fill="#c8d0c9"] { fill:var(--airport); stroke:var(--road-edge); }
+[data-theme] #scene [fill="#637c7b"] { fill:var(--runway); }
+[data-theme] #scene > text { fill:var(--map-ink)!important; }
+[data-theme="night"] #noiseLayer .noise { fill-opacity:.22; }
+[data-theme="night"] #noiseLayer [data-level="65"] { stroke:#e9c969; }
+[data-theme="night"] #noiseLayer [data-level="70"] { stroke:#ed9b54; }
+[data-theme="night"] #noiseLayer [data-level="75"] { stroke:#ef9a8b; }
+[data-theme="night"] .landshape text { fill:#e3eff6; }
+[data-theme="night"] .type-icon { filter:brightness(1.6); }
