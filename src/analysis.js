@@ -2,7 +2,8 @@ export const categories = {
   village: ['行政村', '个'],
   building: ['建筑', '栋'],
   hospital: ['医院', '院区'],
-  school: ['小学', '校区'],
+  school: ['学校及幼儿园', '处'],
+  eldercare: ['养老机构', '处'],
   'state-land': ['国有用地', 'ha'],
   'collective-land': ['集体用地', 'ha'],
 };
@@ -10,7 +11,7 @@ export const categories = {
 export const topics = {
   overview: Object.keys(categories),
   buildings: ['village', 'building'],
-  services: ['hospital', 'school'],
+  services: ['hospital', 'school', 'eldercare'],
   land: ['state-land', 'collective-land'],
 };
 
@@ -22,8 +23,14 @@ export const towns = {
 export const colors = ['#ba9429', '#d88929', '#db683a', '#bd4340', '#9e294a'];
 export const objectColors = {
   village:'#35745c', building:'#43617a', hospital:'#aa4351',
-  school:'#395ba6', 'state-land':'#198579', 'collective-land':'#87724d',
+  school:'#395ba6', eldercare:'#88549c', 'state-land':'#198579', 'collective-land':'#87724d',
 };
+export const isFacility = category => topics.services.includes(category);
+export function facilityDirectory(bundle, state) {
+  return bundle.objects.filter(record => isFacility(record.category) && record.district === '海曙区'
+    && (!state.town || record.town === state.town)
+    && (!state.village || record.village === state.village));
+}
 export const isLand = category => category.endsWith('-land');
 export const hectares = area => (area / 10000).toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2});
 
@@ -53,7 +60,7 @@ export function matchingObjects(bundle, state) {
     && (!state.village || record.village === state.village)
     && (isLand(record.category)
       ? Object.keys(record.overlaps).some(level => bandVisible(Number(level), state))
-      : bandVisible(record.highest, state)));
+      : record.highest != null && bandVisible(record.highest, state)));
 }
 
 export function coveredArea(record, state) {

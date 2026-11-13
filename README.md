@@ -22,7 +22,8 @@ npm.cmd run dev
 - 行政筛选采用海曙区政府公布的[行政区划名录（2020 年）](https://www.haishu.gov.cn/art/2020/8/21/art_1229829853_59034678.html)中的石碶街道和古林镇。它用于过滤对象归属。
 - 行政边界保存在 `public/administrative-boundaries.geojson`。内置 [海曙区](https://www.openstreetmap.org/relation/4571617)、[石碶街道](https://www.openstreetmap.org/relation/11242960)、[古林镇](https://www.openstreetmap.org/relation/11257074)的 OpenStreetMap 边界，按 [ODbL](https://www.openstreetmap.org/copyright) 提供。选择区域时蓝线高亮并定位；缺少村界时显示所属街道（镇）边界，并提示。可在同一 GeoJSON 文件加入正式村界，使用 WGS84 的 Polygon 或 MultiPolygon，属性包含与筛选项一致的 `district`、`town`、`village`，以及来源 `source`。边界展示不会改变噪声面积口径。
 - 内置村界摘自[公开历史村界数据集](https://github.com/thedavidweng/china-village-boundaries)，按历史乡镇编码匹配石碶街道和古林镇，再按现用筛选名称匹配。界面标注「历史参考」，正式使用时可替换为有授权的现行村界。
-- 当前目录未包含村界、建筑、医院、小学正式统计图层，统计显示「未接入」。建筑瓦片用于筛选、高亮与查询。未提供任何土地权属图层时，转换脚本生成两类模拟地块并与模拟噪声分区求交。地块边界、权属和行政归属为模拟值。接入任一正式土地权属图层后，脚本停止生成模拟地块。
+- 「公共设施」提供学校、幼儿园、医疗机构和养老机构的公开资料样本。名称来源为海曙区政府公示，核验过的点位来自 OpenStreetMap。只有具备坐标的设施参加噪声落点判定。缺少坐标的设施列入名录并标注「待定位」。部分村级归属由历史村界匹配。村、建筑正式统计图层仍未接入。
+- 未提供任何土地权属图层时，转换脚本生成两类模拟地块并与模拟噪声分区求交。地块边界、权属和行政归属为模拟值。接入任一正式土地权属图层后，脚本停止生成模拟地块。
 
 ## 重新生成数据与接入对象图层
 
@@ -33,7 +34,10 @@ npm.cmd run dev
 | village.geojson | 行政村 | 面或多面 |
 | building.geojson | 建筑 | 面或多面 |
 | hospital.geojson | 医院院区 | 点、面或多面 |
-| school.geojson | 小学校区 | 点、面或多面 |
+| school.geojson | 学校及幼儿园 | 点、面或多面 |
+| eldercare.geojson | 养老机构 | 点、面或多面 |
+
+公共设施可省略 `village`，并可提供 `kind`、`address`、`sourceUrl`、`locationUrl`。没有可核验位置时，使用 `geometry: null` 保留名录信息。
 | state-land.geojson | 国有用地 | 面或多面 |
 | collective-land.geojson | 集体用地 | 面或多面 |
 

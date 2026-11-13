@@ -1,0 +1,5 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"id":"H01","name":"古林镇卫生院","district":"海曙区","town":"古林镇","kind":"卫生院","sourceUrl":"https://www.haishu.gov.cn/art/2023/1/29/art_1229828714_4468795.html","locationUrl":"https://www.openstreetmap.org/way/1237493684"},"geometry":{"type":"Point","coordinates":[121.4257739,29.8368028]}},
+{"type":"Feature","properties":{"id":"H02","name":"石碶街道社区卫生服务中心（吴剑鸣医院）新院区","district":"海曙区","town":"石碶街道","kind":"社区卫生服务中心","sourceUrl":"https://www.haishu.gov.cn/col/col1229828957/art/2026/art_7560abe13a284a17a4426b03822c0a45.html"},"geometry":null},
+{"type":"Feature","properties":{"id":"H03","name":"海曙协爱中医医院","district":"海曙区","town":"古林镇","kind":"医院","address":"古林镇启运路417号","sourceUrl":"https://www.haishu.gov.cn/attach/0/dd677c6bb91640448fef38e8e100e089.pdf"},"geometry":null}
+]}

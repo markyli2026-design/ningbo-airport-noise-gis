@@ -21,9 +21,11 @@ LAYERS = {
     "building": "建筑",
     "hospital": "医院",
     "school": "小学",
+    "eldercare": "养老机构",
     "state-land": "国有用地",
     "collective-land": "集体用地",
 }
+FACILITIES = {"school", "hospital", "eldercare"}
 
 
 def area_m2(geometry):
@@ -149,6 +151,9 @@ def load_objects(bands):
     objects = []
     available = {}
     land = []
+    boundaries = json.loads((ROOT / "public/administrative-boundaries.geojson").read_text(encoding="utf-8"))
+    villages = [(feature["properties"], shape(feature["geometry"])) for feature in boundaries["features"]
+                if feature["properties"].get("village")]
     missing_land = [category for category in LAYERS if category.endswith("-land")
                     and not (DATA / f"{category}.geojson").exists()]
     # Do not mix synthetic parcels with authoritative ownership data.
@@ -166,14 +171,28 @@ def load_objects(bands):
         seen = set()
         for feature in data["features"]:
             props = feature["properties"]
-            required = ("id", "name", "district", "town", "village")
+            facility = category in FACILITIES
+            required = ("id", "name", "district", "town") if facility else ("id", "name", "district", "town", "village")
             if any(not str(props.get(key) or "").strip() for key in required):
                 raise ValueError(f"{path.name} has missing required fields: {props}")
             record_id = str(props["id"])
             if record_id in seen:
                 raise ValueError(f"{path.name} has duplicate id {record_id}")
             seen.add(record_id)
+            metadata = {key: str(props[key]) for key in ("kind", "address", "sourceUrl", "locationUrl") if props.get(key)}
+            base = {**{key: str(props[key]) for key in required}, **metadata,
+                    "id": f"{category}:{record_id}", "sourceId": record_id, "category": category,
+                    "village": props.get("village", ""), "source": path.name, "simulated": simulated}
+            if facility and feature["geometry"] is None:
+                objects.append({**base, "geometry": None, "overlaps": {}, "highest": None, "areaM2": None})
+                continue
             geom = shape(feature["geometry"])
+            if facility and geom.geom_type == "Point" and not base["village"]:
+                matches = [p["village"] for p, polygon in villages
+                           if p["district"] == props["district"] and p["town"] == props["town"] and polygon.covers(geom)]
+                if len(matches) == 1:
+                    base["village"] = matches[0]
+                    base["villageReference"] = True
             is_land = category.endswith("-land")
             allowed = {"Polygon", "MultiPolygon"} if is_land or category in {"village", "building"} else {"Point", "Polygon", "MultiPolygon"}
             if geom.is_empty or not geom.is_valid or geom.geom_type not in allowed:
@@ -196,17 +215,14 @@ def load_objects(bands):
                     area = area_m2(part)
                     if area > 0:
                         overlaps[level] = {"areaM2": area, "geometry": mapping(part)}
-            if overlaps:
+            if overlaps or facility:
                 objects.append({
-                    **{key: str(props[key]) for key in required},
-                    "id": f"{category}:{record_id}",
-                    "sourceId": record_id,
-                    "category": category,
+                    **base,
                     "geometry": mapping(geom),
                     "bounds": geom.bounds,
                     "areaM2": area_m2(geom) if geom.geom_type != "Point" else None,
                     "overlaps": overlaps,
-                    "highest": max(overlaps),
+                    "highest": max(overlaps, default=None),
                     "source": "模拟地块（非权属调查成果）" if simulated else path.name,
                     "simulated": simulated,
                 })

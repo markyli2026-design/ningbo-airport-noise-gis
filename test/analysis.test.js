@@ -1,12 +1,23 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { bandVisible, coveredArea, matchingObjects, visibleNoiseArea } from '../src/analysis.js';
+import { bandVisible, coveredArea, facilityDirectory, isFacility, matchingObjects, visibleNoiseArea } from '../src/analysis.js';
 import { boundaryBounds, resolveBoundary } from '../src/administrative-boundaries.js';
 import { buildingInScope, buildingScope } from '../src/building-scope.js';
 
 const bundle = JSON.parse(readFileSync(new URL('../public/airport-data.json', import.meta.url), 'utf8'));
 const all = { mode:'bands', level:null, town:'', village:'' };
+
+test('facility directory retains unlocated records without counting them as noise matches', () => {
+  const records = facilityDirectory(bundle, all);
+  assert.equal(records.length,14);
+  assert.equal(records.filter(record => !record.geometry).length,6);
+  const matched = matchingObjects(bundle, all).filter(record => isFacility(record.category));
+  assert.equal(matched.length,4);
+  assert.ok(matched.every(record => record.geometry.type === 'Point' && record.locationUrl));
+  assert.ok(matchingObjects(bundle,{...all,town:'石碶街道',village:'栎社村'})
+    .some(record => record.name === '栎社小学'));
+});
 
 test('building highlighting requires area in the intersection of noise and village', () => {
   const rectangle = (w,s,e,n) => [[[w,s],[e,s],[e,n],[w,n],[w,s]]];

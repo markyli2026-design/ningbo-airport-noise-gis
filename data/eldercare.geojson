@@ -1,0 +1,6 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"id":"E01","name":"石碶街道敬老院","district":"海曙区","town":"石碶街道","kind":"敬老院","sourceUrl":"https://www.haishu.gov.cn/art/2023/10/16/art_1229697490_58987778.html"},"geometry":null},
+{"type":"Feature","properties":{"id":"E02","name":"广安古林养怡院","district":"海曙区","town":"古林镇","kind":"养怡院","sourceUrl":"https://www.haishu.gov.cn/art/2024/1/8/art_1229697490_58991389.html"},"geometry":null},
+{"type":"Feature","properties":{"id":"E03","name":"郭夏村老年照护院","district":"海曙区","town":"古林镇","village":"郭夏村","kind":"老年照护院","sourceUrl":"https://www.haishu.gov.cn/col/col1229825334/art/2026/art_329027b8c5cd5a49f71aa1a32f3e2436.html"},"geometry":null},
+{"type":"Feature","properties":{"id":"E04","name":"雅渡村老年乐园","district":"海曙区","town":"石碶街道","village":"雅渡村","kind":"老年照护机构","sourceUrl":"https://www.haishu.gov.cn/art/2025/1/21/art_1229100536_59101206.html"},"geometry":null}
+]}
