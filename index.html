@@ -15,7 +15,7 @@
     <span class="brand-mark" aria-hidden="true">✈</span>
     <div><h1>宁波机场四期扩建辅助决策系统</h1><p>飞机起降噪声影响分析</p></div>
     <div class="title-actions">
-      <span class="source-chip">实际噪声成果</span>
+      <span class="source-chip">矩形噪声模拟数据</span>
       <button id="source-open" type="button">数据说明</button>
     </div>
   </header>
@@ -67,7 +67,7 @@
         <label>街道 / 镇<select id="town" aria-label="街道或镇"></select></label>
         <label>行政村<select id="village" aria-label="行政村"></select></label>
       </div>
-      <p class="footnote">用于筛选对象归属。噪声范围和面积按完整等值线展示。</p>
+      <p class="footnote">建筑按所选区域与噪声范围的交集筛选。覆盖面积仍按完整模拟范围计算。</p>
     </section>
     <section id="detail" class="detail panel" hidden aria-label="地图对象详情"></section>
     <div id="legend" class="legend panel" aria-label="噪声图例"></div>
@@ -93,11 +93,11 @@
   <dialog id="source-dialog">
     <h2>数据说明</h2>
     <p id="source-summary"></p>
-    <p>噪声等级取自原始 Layer 字段。原文件未提供评价指标、评价时段或预测工况。</p>
-    <p>闭合等值线转换为面后，按相邻阈值相减得到互斥分区。面积按 WGS84 椭球计算。行政筛选作用于对象归属，噪声面积不按行政区裁切。</p>
+    <p>噪声范围为五档模拟矩形，覆盖面积参照原成果校准，仅用于系统演示。</p>
+    <p>相邻等级矩形相减得到互斥分区，面积按 WGS84 椭球计算。噪声覆盖面积按完整模拟范围展示。</p>
     <p>浅色电子底图为 Esri Light Gray Canvas，建筑轮廓来自 CARTO 的 OpenStreetMap 矢量瓦片，遥感影像为 Esri World Imagery，地形来自 Mapzen 高程瓦片。</p>
     <p>国有和集体用地可使用模拟地块。模拟地块的边界、权属和行政归属仅用于演示。建筑底图轮廓不计入影响统计。</p>
-    <p>区和街道（镇）边界来自 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>，供地图参考。选择未接入村界的行政村时显示所属街道（镇）边界。</p>
+    <p>区和街道（镇）边界来自 <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>。村界来自<a href="https://github.com/thedavidweng/china-village-boundaries" target="_blank" rel="noopener">公开历史数据集</a>，仅供参考。建筑按噪声范围与所选行政区的交集筛选，点击可查询瓦片属性。</p>
     <form method="dialog"><button>关闭</button></form>
   </dialog>
 </body>

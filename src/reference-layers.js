@@ -1,5 +1,7 @@
 import { VectorTile } from '@mapbox/vector-tile';
 import Pbf from 'pbf';
+import { boundaryBounds, boundaryPolygons } from './administrative-boundaries.js';
+import { buildingInScope } from './building-scope.js';
 
 const cartoTileJson = 'https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json';
 const elevationUrl = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium';
@@ -15,7 +17,10 @@ export function addBuildingTiles(C, viewer, bounds, report) {
   const entries = new Map();
   let enabled = true;
   let tileJson;
-  const color = C.Color.fromCssColorString('#849bab').withAlpha(.72);
+  let scope = [];
+  let highlight = false;
+  let selected;
+  let revision = 0;
   const stateLabel = count => count ? `已加载 ${count.toLocaleString('zh-CN')} 个轮廓` : '当前范围无建筑轮廓';
 
   const positions = ring => C.Cartesian3.fromDegreesArray(ring.flatMap(([lon,lat]) => [lon,lat]));
@@ -34,15 +39,34 @@ export function addBuildingTiles(C, viewer, bounds, report) {
     if (!response.ok) throw new Error(`MVT HTTP ${response.status}`);
     const layer = new VectorTile(new Pbf(await response.arrayBuffer())).layers.building;
     if (entry.abort.signal.aborted || !layer) return;
-    const instances = [];
+    const records = [];
     for (let index = 0; index < layer.length; index++) {
       const feature = layer.feature(index);
       if (feature.type !== 3) continue;
       const geometry = feature.toGeoJSON(x, y, level).geometry;
-      const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
-      for (const rings of polygons) {
-        if (rings[0].length < 4) continue;
+      const polygons = boundaryPolygons(geometry).filter(rings => rings[0].length >= 4);
+      if (!polygons.length) continue;
+      const id = `mvt:${x}/${y}/${feature.id ?? index}`;
+      records.push({id,polygons,properties:feature.properties,bounds:boundaryBounds(polygons)});
+    }
+    entry.records = records;
+    renderTile(entry);
+  }
+
+  function renderTile(entry) {
+    if (!entry.records || entry.revision === revision) return;
+    entry.revision = revision;
+    if (entry.primitive) collection.remove(entry.primitive);
+    entry.primitive = undefined;
+    const instances = [];
+    for (const record of entry.records) {
+      if (!buildingInScope(record.polygons,scope)) continue;
+      const color = C.Color.fromCssColorString(record.id === selected ? '#0055bd' : highlight ? '#1885df' : '#526d82')
+        .withAlpha(record.id === selected ? .98 : .84);
+      const pickId = {buildingRecord:record};
+      for (const rings of record.polygons) {
         instances.push(new C.GeometryInstance({
+          id:pickId,
           geometry: new C.PolygonGeometry({
             polygonHierarchy:polygonHierarchy(rings), vertexFormat:C.PerInstanceColorAppearance.VERTEX_FORMAT,
           }),
@@ -53,7 +77,7 @@ export function addBuildingTiles(C, viewer, bounds, report) {
     entry.count = instances.length;
     if (instances.length) entry.primitive = collection.add(new C.GroundPrimitive({
       geometryInstances:instances, classificationType:C.ClassificationType.TERRAIN,
-      allowPicking:false,
+      allowPicking:true,
     }));
     scene.requestRender();
   }
@@ -95,7 +119,7 @@ export function addBuildingTiles(C, viewer, bounds, report) {
   scene.morphComplete.addEventListener(refresh);
   viewer.resize();
   refresh();
-  return function setBuildings(show) {
+  function setBuildings(show) {
     enabled = show;
     if (show) refresh();
     else {
@@ -103,7 +127,16 @@ export function addBuildingTiles(C, viewer, bounds, report) {
       report('已关闭');
     }
     scene.requestRender();
-  };
+  }
+  return {setBuildings, setScope(polygons, active, key) {
+    scope = polygons;
+    scope.bounds = boundaryBounds(polygons);
+    highlight = active;
+    selected = key;
+    revision++;
+    for (const entry of entries.values()) renderTile(entry);
+    reportState();
+  }};
 }
 
 export function createTerrain(C, report) {

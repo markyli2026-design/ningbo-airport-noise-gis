@@ -5,6 +5,7 @@ import {
 } from './analysis.js';
 import { createMap } from './map.js';
 import { boundaryPolygons, resolveBoundary } from './administrative-boundaries.js';
+import { area as polygonArea } from './geometry-area.js';
 
 const byId = id => document.getElementById(id);
 const state = {
@@ -16,6 +17,7 @@ let map;
 let levels = [];
 let boundaries = [];
 let boundaryState = 'loading';
+let pickedBuilding;
 const formatArea = area => area === undefined ? '—' : hectares(area);
 const label = level => levelLabel(level, levels, state.mode);
 const hue = level => colors[levels.indexOf(level) % colors.length];
@@ -39,7 +41,9 @@ function refreshRegion() {
   const names = state.town ? towns[state.town].split(' ').map(name => name + '村') : [];
   const extra = bundle?.objects.filter(object => object.district === '海曙区' && object.town === state.town)
     .map(object => object.village) ?? [];
-  setOptions(byId('village'), [...new Set([...names, ...extra])].map(name => [name,name]), '全部行政村');
+  const boundaryNames = boundaries.filter(({properties}) => properties.town === state.town && properties.village)
+    .map(({properties}) => properties.village);
+  setOptions(byId('village'), [...new Set([...names, ...extra, ...boundaryNames])].map(name => [name,name]), '全部行政村');
   byId('village').disabled = !state.town;
   byId('town').value = state.town;
   byId('village').value = state.village;
@@ -49,13 +53,13 @@ function refreshRegion() {
 function refreshBoundary(fly = false) {
   const status = byId('boundary-status');
   const {feature, requested, displayed, exact} = resolveBoundary(boundaries, '海曙区', state.town, state.village);
-  map?.setBoundary(feature, fly);
+  map?.setBoundary(feature, fly, exact);
   if (boundaryState === 'loading') {
     status.textContent = '正在加载行政边界…';
   } else if (boundaryState === 'failed') {
     status.textContent = '行政边界加载失败';
   } else if (exact) {
-    status.textContent = `边界 · ${displayed}`;
+    status.textContent = `边界 · ${displayed}${feature.properties.village ? '（历史参考）' : ''}`;
   } else {
     status.textContent = `${requested}边界未接入${displayed ? `，显示${displayed}边界` : ''}`;
   }
@@ -71,6 +75,7 @@ async function loadBoundaries() {
     boundaries = data.features.filter(feature => feature.properties?.district && feature.geometry
       && boundaryPolygons(feature.geometry).length);
     boundaryState = 'ready';
+    refreshRegion();
   } catch (error) {
     boundaryState = 'failed';
     console.warn('行政边界加载失败', error);
@@ -97,7 +102,7 @@ function renderMetrics() {
   const matched = matchingObjects(bundle, state);
   byId('scope').textContent = [state.level === null ? '全部等级' : label(state.level), '海曙区', state.town, state.village].filter(Boolean).join(' · ');
   byId('area').textContent = formatArea(visibleNoiseArea(bundle, state));
-  byId('area-note').textContent = '完整等值线范围 · 未按行政区裁切';
+  byId('area-note').textContent = '完整模拟范围 · 未按行政区裁切';
   byId('metrics').innerHTML = Object.entries(categories).map(([category, [name, unit]]) => {
     const available = bundle.available[category];
     const objects = matched.filter(record => record.category === category);
@@ -113,7 +118,7 @@ function renderMetrics() {
   byId('bars').innerHTML = chart.map(record => `<button class="bar-row" data-level="${record.level}" aria-pressed="${record.level === state.level}"><span>${label(record.level)}</span><span class="bar-track"><i style="width:${record.areaM2/max*100}%;background:${hue(record.level)}"></i></span><span>${hectares(record.areaM2)}</span></button>`).join('');
   byId('legend').innerHTML = levels.map(level => `<button data-level="${level}" class="badge" aria-pressed="${level === state.level}">${dot(hue(level))}${label(level)}</button>`).join('');
   byId('summary-note').textContent = state.mode === 'cumulative'
-    ? '各阈值范围逐级包含，面积不能相加。' : '各分区互不重叠。噪声评价指标和工况待确认。';
+    ? '各阈值范围逐级包含，面积不能相加。' : '各模拟分区互不重叠。';
 }
 
 function renderList(objects) {
@@ -148,13 +153,25 @@ function renderList(objects) {
 
 function selection() {
   if (!state.selected) return;
+  if (state.selected === pickedBuilding?.id) {
+    const {properties,polygons,id} = pickedBuilding;
+    const rows = [
+      ['瓦片编号',id.slice(4)],
+      ['轮廓面积',polygonArea(polygons).toFixed(1) + ' m²'],
+      ['筛选范围',byId('region-open').textContent],
+      ['噪声条件',state.level === null ? '全部等级（模拟）' : label(state.level) + '（模拟）'],
+      ['数据来源','CARTO / OpenStreetMap 建筑矢量瓦片'],
+    ];
+    if (properties.render_height != null) rows.splice(2,0,['瓦片高度',properties.render_height + ' m']);
+    return {title:properties.name || '建筑轮廓',rows};
+  }
   if (state.selected.startsWith('noise:')) {
     const level = Number(state.selected.split(':')[1]);
     const record = recordsForMode(bundle, state.mode).find(item => item.level === level);
     if (record) return {record, title:label(level), rows:[
       ['统计方式', state.mode === 'bands' ? '互斥分区' : '累计阈值'],
       ['覆盖面积', hectares(record.areaM2) + ' ha'],
-      ['源轮廓条数', record.sourceCount],
+      ['模拟矩形数', record.sourceCount],
       ['数据来源', bundle.source],
     ]};
   } else {
@@ -218,14 +235,16 @@ function bind() {
     render();
   };
   byId('town').onchange = event => {
-    update({town:event.target.value,village:'',selected:null});
+    update({town:event.target.value,village:'',selected:null},false);
     refreshRegion();
     refreshBoundary(true);
+    render();
   };
   byId('village').onchange = event => {
-    update({village:event.target.value,selected:null});
+    update({village:event.target.value,selected:null},false);
     refreshRegion();
     refreshBoundary(true);
+    render();
   };
   byId('reset').onclick = () => {
     update({topic:'overview',level:null,mode:'bands',town:'',village:'',category:'',list:'noise',query:'',selected:null},false);
@@ -309,7 +328,7 @@ async function start() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     bundle = await response.json();
     levels = bundle.bands.map(record => record.level);
-    byId('source-summary').textContent = `${bundle.source} · ${bundle.sourceCrs} · ${bundle.sourceCount} 条闭合等值线 · ${levels.length} 个等级`;
+    byId('source-summary').textContent = `${bundle.source} · ${bundle.sourceCrs} · ${levels.length} 个等级`;
     byId('noise-level').disabled = false;
     bind();
     render();
@@ -322,6 +341,7 @@ async function start() {
     map = createMap(bundle,{message:showMessage, mode:text => byId('scene-mode').textContent = text,
       buildings:text => byId('buildings-status').textContent = text,
       terrain:text => byId('terrain-status').textContent = text,
+      buildingPick:record => { pickedBuilding = record; update({selected:record.id}); },
       pick:key => select(key), clear:() => update({selected:null})});
     render();
   } catch (error) {

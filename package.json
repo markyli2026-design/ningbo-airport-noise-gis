@@ -14,7 +14,8 @@
   "dependencies": {
     "@mapbox/vector-tile": "2.0.4",
     "cesium": "1.139.0",
-    "pbf": "4.0.1"
+    "pbf": "4.0.1",
+    "polygon-clipping": "0.15.7"
   },
   "devDependencies": {
     "vite": "7.3.8"

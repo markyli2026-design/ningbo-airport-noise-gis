@@ -1,10 +1,11 @@
 """Compile the supplied CGCS2000 contours and optional WGS84 object layers."""
-import hashlib
 import json
 import re
+from math import sqrt
 from pathlib import Path
 
 import shapefile
+from shapely.affinity import scale
 from pyproj import CRS, Geod, Transformer
 from shapely import transform, union_all
 from shapely.geometry import Polygon, box, mapping, shape
@@ -76,6 +77,27 @@ def noise_records(geometries, counts):
         }
         for level, geom in geometries.items()
     ]
+
+
+def simulated_contours(reference):
+    """Use one nested rectangle per level, matching the reference scale and orientation."""
+    project = Transformer.from_crs(4326, 32651, always_xy=True)
+    unproject = Transformer.from_crs(32651, 4326, always_xy=True)
+    outer = transform(next(iter(reference.values())), project.transform, interleaved=False)
+    rectangle = outer.minimum_rotated_rectangle
+    cumulative = {}
+    for level, geometry in reference.items():
+        target = transform(geometry, project.transform, interleaved=False).area
+        ratio = sqrt(target / rectangle.area)
+        footprint = scale(rectangle, xfact=ratio, yfact=ratio, origin="centroid")
+        cumulative[level] = transform(footprint, unproject.transform, interleaved=False)
+    levels = list(cumulative)
+    bands = {
+        level: cumulative[level].difference(cumulative[levels[index + 1]])
+        if index + 1 < len(levels) else cumulative[level]
+        for index, level in enumerate(levels)
+    }
+    return cumulative, bands
 
 
 def demo_parcels(bands, categories):
@@ -199,13 +221,14 @@ def load_objects(bands):
 
 
 def main():
-    grouped, cumulative, bands = contours()
-    counts = {level: len(parts) for level, parts in grouped.items()}
+    _, reference, _ = contours()
+    cumulative, bands = simulated_contours(reference)
+    counts = dict.fromkeys(cumulative, 1)
     available, objects = load_objects(bands)
     bundle = {
-        "source": SOURCE.name,
-        "sourceCrs": "CGCS2000",
-        "sourceHash": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+        "source": "矩形噪声模拟数据",
+        "sourceCrs": "WGS84",
+        "simulated": True,
         "sourceCount": sum(counts.values()),
         "bounds": list(cumulative[min(cumulative)].bounds),
         "bands": noise_records(bands, counts),

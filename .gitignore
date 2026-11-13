@@ -4,3 +4,4 @@ node_modules/
 public/cesium/
 dist/
 __pycache__/
+data/*.lock

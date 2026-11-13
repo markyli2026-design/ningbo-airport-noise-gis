@@ -1,6 +1,7 @@
 import { bandVisible, colors, isLand, objectColors } from './analysis.js';
 import { addBuildingTiles, buildingCredit, createTerrain, terrainCredit } from './reference-layers.js';
 import { boundaryBounds, boundaryPolygons } from './administrative-boundaries.js';
+import { buildingScope } from './building-scope.js';
 
 const base = {
   street: {
@@ -41,6 +42,17 @@ export function createMap(bundle, callbacks) {
   const boundaryEntities = [];
   let activeBoundary;
   let activeBoundaryBounds;
+  let buildingRegion;
+  let buildingFilterKey;
+  let previousState;
+
+  function updateBuildingFilter(state) {
+    const key = JSON.stringify([state.level,state.mode,state.town,state.village,state.selected?.startsWith('mvt:') ? state.selected : null]);
+    if (key === buildingFilterKey) return;
+    buildingFilterKey = key;
+    buildingTiles.setScope(buildingRegion === null ? [] : buildingScope(bundle,state,buildingRegion),
+      Boolean(state.level !== null || state.town || state.village), state.selected);
+  }
   const terrainAttribution = new C.Credit(terrainCredit, true);
   const ellipsoid = new C.EllipsoidTerrainProvider();
   let terrain;
@@ -94,7 +106,7 @@ export function createMap(bundle, callbacks) {
   const hierarchy = rings => new C.PolygonHierarchy(positions(rings[0]),
     rings.slice(1).map(ring => new C.PolygonHierarchy(positions(ring))));
 
-  function setBoundary(feature, fly = false) {
+  function setBoundary(feature, fly = false, exact = true) {
     if (activeBoundary !== feature) {
       for (const entity of boundaryEntities.splice(0)) viewer.entities.remove(entity);
       creditDisplay.removeStaticCredit(boundaryAttribution);
@@ -115,6 +127,12 @@ export function createMap(bundle, callbacks) {
       }
     }
     if (fly && activeBoundaryBounds) locate(activeBoundaryBounds);
+    const region = exact ? feature : null;
+    if (buildingRegion !== region) {
+      buildingRegion = region;
+      buildingFilterKey = undefined;
+      if (previousState) updateBuildingFilter(previousState);
+    }
     scene.requestRender();
   }
 
@@ -146,6 +164,8 @@ export function createMap(bundle, callbacks) {
   }
 
   function update(state, records) {
+    previousState = state;
+    updateBuildingFilter(state);
     viewer.entities.suspendEvents();
     try {
       bundle.bands.forEach((record, index) => {
@@ -239,7 +259,10 @@ export function createMap(bundle, callbacks) {
     home();
   });
   viewer.screenSpaceEventHandler.setInputAction(({position}) => {
-    const picked = scene.drillPick(position, 12).map(value => value.id?.pickKey).filter(Boolean);
+    const hits = scene.drillPick(position, 20);
+    const building = hits.find(value => value.id?.buildingRecord)?.id.buildingRecord;
+    if (building) { callbacks.buildingPick(building); return; }
+    const picked = hits.map(value => value.id?.pickKey).filter(Boolean);
     const object = picked.find(id => !id.startsWith('noise:'));
     const noise = picked.filter(id => id.startsWith('noise:')).sort((a,b) => Number(b.split(':')[1]) - Number(a.split(':')[1]))[0];
     if (object || noise) callbacks.pick(object ?? noise);
@@ -247,12 +270,12 @@ export function createMap(bundle, callbacks) {
   }, C.ScreenSpaceEventType.LEFT_CLICK);
   home();
   setBasemap('street');
-  const toggleBuildings = addBuildingTiles(C, viewer, bundle.bounds, callbacks.buildings);
+  const buildingTiles = addBuildingTiles(C, viewer, bundle.bounds, callbacks.buildings);
   creditDisplay.addStaticCredit(buildingAttribution);
   return {
     update, setBasemap, setTerrain, setMode, home, locate, setBoundary,
     setBuildings(show) {
-      toggleBuildings(show);
+      buildingTiles.setBuildings(show);
       if (show) creditDisplay.addStaticCredit(buildingAttribution);
       else creditDisplay.removeStaticCredit(buildingAttribution);
     },
